@@ -239,7 +239,8 @@ func AnalyzeAndExportDemo(demoPath string, outputPath string, options AnalyzeAnd
 		}
 	}
 
-	match, err := analyzeDemo(demoPath, AnalyzeDemoOptions{
+	// Získáme plný match
+	fullMatch, err := analyzeDemo(demoPath, AnalyzeDemoOptions{
 		IncludePositions: options.IncludePositions,
 		Source:           options.Source,
 	})
@@ -248,13 +249,29 @@ func AnalyzeAndExportDemo(demoPath string, outputPath string, options AnalyzeAnd
 		return err
 	}
 
+	// Pokud IncludePositions, vytvoříme nový zredukovaný match s jen pozicemi
+	if options.IncludePositions {
+		fullMatch = struct {
+			PlayerPositions  interface{} `json:"playerPositions"`
+			GrenadePositions interface{} `json:"grenadePositions"`
+			InfernoPositions interface{} `json:"infernoPositions"`
+			HostagePositions interface{} `json:"hostagePositions"`
+		}{
+			PlayerPositions:  fullMatch.PlayerPositions,
+			GrenadePositions: fullMatch.GrenadePositions,
+			InfernoPositions: fullMatch.InfernoPositions,
+			HostagePositions: fullMatch.HostagePositions,
+		}
+	}
+
+	// Export podle formátu
 	switch options.Format {
 	case "csv":
-		err = exportMatchToCSV(match, outputPath)
+		err = exportMatchToCSV(fullMatch, outputPath)
 	case "json":
-		err = exportMatchToJSON(match, outputPath, options.MinifyJSON)
+		err = exportMatchToJSON(fullMatch, outputPath, options.MinifyJSON)
 	case "csdm":
-		err = exportMatchForCSDM(match, outputPath)
+		err = exportMatchForCSDM(fullMatch, outputPath)
 	}
 
 	return err
